@@ -1,9 +1,16 @@
+<!--
+Simplified Login Page - Modern dark-mode aesthetic
+Removed attack monitor, kept vulnerability annotations
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Security Testbed</title>
+    <title>Login - SecureLab</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -11,103 +18,404 @@
             box-sizing: border-box;
         }
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #0a0a0f;
             min-height: 100vh;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
+            position: relative;
+        }
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 50% 50%, rgba(59, 130, 246, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+        }
+        .brand-header {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            font-size: 24px;
+            font-weight: 700;
+            color: #e5e7eb;
         }
         .login-container {
-            background: white;
+            background: #111118;
             padding: 40px;
-            border-radius: 10px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            border-radius: 12px;
+            border: 1px solid #1e1e2e;
+            box-shadow: 0 0 40px rgba(59, 130, 246, 0.15), 0 20px 40px rgba(0,0,0,0.4);
             width: 100%;
-            max-width: 400px;
+            max-width: 420px;
+            position: relative;
+            z-index: 1;
+        }
+        .vuln-button {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            z-index: 10;
+            font-family: 'Inter', sans-serif;
+        }
+        .vuln-button:hover {
+            background: #dc2626;
+            transform: translateY(-1px);
+        }
+        .vuln-button.active {
+            background: #22c55e;
         }
         h1 {
             text-align: center;
-            color: #333;
+            color: #e5e7eb;
             margin-bottom: 30px;
             font-size: 28px;
+            font-weight: 700;
         }
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 24px;
+            position: relative;
         }
         label {
             display: block;
             margin-bottom: 8px;
-            color: #555;
+            color: #9ca3af;
             font-weight: 500;
+            font-size: 14px;
         }
         input[type="text"],
         input[type="password"] {
             width: 100%;
-            padding: 12px;
-            border: 2px solid #ddd;
-            border-radius: 5px;
-            font-size: 14px;
-            transition: border-color 0.3s;
+            padding: 14px 16px;
+            background: #0a0a0f;
+            border: 1px solid #1e1e2e;
+            border-radius: 8px;
+            font-size: 15px;
+            color: #e5e7eb;
+            transition: all 0.2s;
+            font-family: 'Inter', sans-serif;
         }
         input[type="text"]:focus,
         input[type="password"]:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
         }
-        button {
+        button[type="submit"] {
             width: 100%;
-            padding: 12px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 14px;
+            background: #3b82f6;
             color: white;
             border: none;
-            border-radius: 5px;
+            border-radius: 8px;
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
-            transition: transform 0.2s;
+            transition: all 0.2s;
+            font-family: 'Inter', sans-serif;
         }
-        button:hover {
-            transform: translateY(-2px);
+        button[type="submit"]:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+        button[type="submit"]:active {
+            transform: translateY(0);
         }
         .error {
-            color: #e74c3c;
+            color: #ef4444;
             text-align: center;
             margin-top: 15px;
             font-size: 14px;
+            font-weight: 500;
         }
         .warning {
-            background: #fff3cd;
-            border: 1px solid #ffc107;
-            padding: 10px;
-            border-radius: 5px;
-            margin-bottom: 20px;
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 24px;
             font-size: 13px;
-            color: #856404;
+            color: #f59e0b;
+            font-weight: 500;
+        }
+        .signup-link {
+            text-align: center;
+            margin-top: 20px;
+            color: #9ca3af;
+            font-size: 14px;
+        }
+        .signup-link a {
+            color: #3b82f6;
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.2s;
+        }
+        .signup-link a:hover {
+            color: #2563eb;
+            text-decoration: underline;
+        }
+
+        /* Vulnerability Annotation Styles */
+        .vuln-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(10, 10, 15, 0.9);
+            z-index: 999;
+            display: none;
+            backdrop-filter: blur(4px);
+        }
+        .vuln-overlay.active {
+            display: block;
+        }
+        .vuln-sidebar {
+            position: fixed;
+            right: -450px;
+            top: 0;
+            bottom: 0;
+            width: 450px;
+            background: #111118;
+            color: #e5e7eb;
+            padding: 30px;
+            overflow-y: auto;
+            transition: right 0.3s ease-out;
+            z-index: 1000;
+            box-shadow: -5px 0 30px rgba(0,0,0,0.8);
+            border-left: 1px solid #1e1e2e;
+        }
+        .vuln-sidebar.active {
+            right: 0;
+        }
+        .vuln-sidebar-header {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 25px;
+            color: #ef4444;
+        }
+        .vuln-item {
+            background: #0a0a0f;
+            padding: 18px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            border: 1px solid #1e1e2e;
+            border-left: 3px solid #ef4444;
+        }
+        .vuln-number {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            background: #ef4444;
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 24px;
+            font-weight: 700;
+            font-size: 13px;
+            margin-right: 10px;
+        }
+        .vuln-element {
+            font-weight: 600;
+            color: #3b82f6;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        .vuln-issue {
+            color: #ef4444;
+            margin-bottom: 8px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        .vuln-fix {
+            color: #22c55e;
+            font-size: 13px;
+            margin-top: 8px;
+            line-height: 1.5;
+        }
+        .vuln-highlight {
+            outline: 2px solid #ef4444 !important;
+            outline-offset: 3px;
+            animation: pulse-outline 2s infinite;
+        }
+        @keyframes pulse-outline {
+            0%, 100% { outline-color: #ef4444; }
+            50% { outline-color: #dc2626; }
+        }
+        .vuln-badge {
+            position: absolute;
+            top: -12px;
+            right: -12px;
+            width: 24px;
+            height: 24px;
+            background: #ef4444;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 13px;
+            box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+            z-index: 10;
+        }
+        .login-container.annotated .form-group {
+            position: relative;
         }
     </style>
 </head>
 <body>
-    <div class="login-container">
+    <div class="brand-header">🛡 SecureLab</div>
+
+    <div class="login-container" id="loginContainer">
+        <button class="vuln-button" id="vulnButton" onclick="toggleVulnerabilities()">
+            🔍 Show Vulnerabilities
+        </button>
         <h1>🔐 Login System</h1>
         <div class="warning">
             ⚠️ <strong>Security Testbed</strong> - For educational purposes only
         </div>
         <form id="loginForm" method="POST" action="/login">
-            <div class="form-group">
+            <div class="form-group" id="usernameGroup">
                 <label for="username">Username</label>
                 <input type="text" id="username" name="username" required>
             </div>
-            <div class="form-group">
+            <div class="form-group" id="passwordGroup">
                 <label for="password">Password</label>
                 <input type="password" id="password" name="password" required>
             </div>
-            <button type="submit">Login</button>
+            <button type="submit" id="submitButton">Login</button>
         </form>
         <div id="errorMessage" class="error"></div>
+        <div class="signup-link">
+            Don't have an account? <a href="/register">Sign up</a>
+        </div>
+    </div>
+
+    <!-- Vulnerability Overlay and Sidebar -->
+    <div class="vuln-overlay" id="vulnOverlay" onclick="toggleVulnerabilities()"></div>
+    <div class="vuln-sidebar" id="vulnSidebar">
+        <div class="vuln-sidebar-header">🔍 Security Vulnerabilities</div>
+
+        <div class="vuln-item">
+            <div class="vuln-element"><span class="vuln-number">❶</span>Password Field</div>
+            <div class="vuln-issue">MD5 hashing — trivially reversible, no salt</div>
+            <div class="vuln-fix">Fix: Use bcrypt or argon2</div>
+        </div>
+
+        <div class="vuln-item">
+            <div class="vuln-element"><span class="vuln-number">❷</span>Login Endpoint</div>
+            <div class="vuln-issue">No rate limiting by default</div>
+            <div class="vuln-fix">Fix: Enable rate limiting in dashboard</div>
+        </div>
+
+        <div class="vuln-item">
+            <div class="vuln-element"><span class="vuln-number">❸</span>Error Messages</div>
+            <div class="vuln-issue">Username enumeration — "Invalid username" vs "Wrong password"</div>
+            <div class="vuln-fix">Fix: Return identical errors</div>
+        </div>
+
+        <div class="vuln-item">
+            <div class="vuln-element"><span class="vuln-number">❹</span>Session Cookie</div>
+            <div class="vuln-issue">Predictable dev-secret-key signs tokens</div>
+            <div class="vuln-fix">Fix: Set a strong SECRET_KEY in env</div>
+        </div>
+
+        <div class="vuln-item">
+            <div class="vuln-element"><span class="vuln-number">❺</span>Login Form</div>
+            <div class="vuln-issue">No CSRF token</div>
+            <div class="vuln-fix">Fix: Use Flask-WTF csrf_token()</div>
+        </div>
+
+        <div class="vuln-item">
+            <div class="vuln-element"><span class="vuln-number">❻</span>No MFA</div>
+            <div class="vuln-issue">Single-factor only</div>
+            <div class="vuln-fix">Fix: Enable MFA in dashboard</div>
+        </div>
+
+        <div class="vuln-item">
+            <div class="vuln-element"><span class="vuln-number">❼</span>Math CAPTCHA</div>
+            <div class="vuln-issue">Arithmetic challenges are machine-solvable in &lt;1ms. A script can parse the question from the HTML, compute the answer, and submit — indistinguishable from a human.</div>
+            <div class="vuln-fix">Fix: Use a proof-of-work CAPTCHA (Cloudflare Turnstile, hCaptcha) or behavioural analysis — challenges that cannot be solved by reading the DOM.</div>
+        </div>
     </div>
 
     <script>
+        // Toggle vulnerability annotations
+        let annotationMode = false;
+        function toggleVulnerabilities() {
+            annotationMode = !annotationMode;
+            const overlay = document.getElementById('vulnOverlay');
+            const sidebar = document.getElementById('vulnSidebar');
+            const button = document.getElementById('vulnButton');
+            const container = document.getElementById('loginContainer');
+
+            if (annotationMode) {
+                overlay.classList.add('active');
+                sidebar.classList.add('active');
+                button.classList.add('active');
+                button.textContent = '✓ Hide Vulnerabilities';
+                container.classList.add('annotated');
+
+                // Add vulnerability badges
+                addVulnBadge('passwordGroup', '❶');
+                addVulnBadge('loginForm', '❷');
+                addVulnBadge('errorMessage', '❸');
+                addVulnBadge('loginContainer', '❹');
+                addVulnBadge('loginForm', '❺');
+                addVulnBadge('submitButton', '❻');
+
+                // Highlight vulnerable elements
+                document.getElementById('password').classList.add('vuln-highlight');
+                document.getElementById('loginForm').classList.add('vuln-highlight');
+            } else {
+                overlay.classList.remove('active');
+                sidebar.classList.remove('active');
+                button.classList.remove('active');
+                button.textContent = '🔍 Show Vulnerabilities';
+                container.classList.remove('annotated');
+
+                // Remove badges and highlights
+                document.querySelectorAll('.vuln-badge').forEach(b => b.remove());
+                document.querySelectorAll('.vuln-highlight').forEach(e => e.classList.remove('vuln-highlight'));
+            }
+        }
+
+        // Add vulnerability badge to element
+        function addVulnBadge(elementId, number) {
+            const element = document.getElementById(elementId);
+            if (element && !element.querySelector('.vuln-badge')) {
+                const badge = document.createElement('div');
+                badge.className = 'vuln-badge';
+                badge.textContent = number;
+                element.style.position = 'relative';
+                element.appendChild(badge);
+            }
+        }
+
+        // Handle Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && annotationMode) {
+                toggleVulnerabilities();
+            }
+        });
+
+        // Login form handler
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = new FormData(e.target);
@@ -117,6 +425,16 @@
                     method: 'POST',
                     body: formData
                 });
+
+                const contentType = response.headers.get('content-type') || '';
+
+                if (contentType.includes('text/html')) {
+                    const html = await response.text();
+                    document.open();
+                    document.write(html);
+                    document.close();
+                    return;
+                }
 
                 if (response.ok) {
                     window.location.href = '/dashboard';

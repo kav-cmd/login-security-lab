@@ -11,8 +11,8 @@ ACCOUNT_LOCKOUT = False
 IP_BLOCKING = False
 CAPTCHA_ENABLED = False
 ANOMALY_DETECTION = False
-MFA_ENABLED = False
-PWNED_CHECK_ENABLED = True
+MFA_ENABLED = True
+PWNED_CHECK_ENABLED = False
 PASSWORD_STRENGTH = False
 
 # Thresholds and limits
@@ -33,3 +33,5 @@ HIBP_API_URL = 'https://api.pwnedpasswords.com/range'  # k-anonymity API endpoin
 # Flask settings
 SECRET_KEY = 'dev-secret-key-change-in-production'
 DEBUG = True
+
+

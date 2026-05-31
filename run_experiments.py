@@ -163,7 +163,19 @@ def set_config_toggles(config_values: dict[str, bool]) -> None:
 
 def clear_database() -> None:
     if DB_PATH.exists():
-        DB_PATH.unlink()
+        start = time.time()
+        timeout = 10
+        while True:
+            try:
+                DB_PATH.unlink()
+                return
+            except PermissionError:
+                if time.time() - start > timeout:
+                    raise RuntimeError(
+                        f"Could not delete database {DB_PATH!s}: file is locked by another process."
+                        " Stop any running Flask/Streamlit instances and try again."
+                    )
+                time.sleep(1)
 
 
 def wait_for_server(timeout_sec: int = 45) -> None:
@@ -183,9 +195,12 @@ def wait_for_server(timeout_sec: int = 45) -> None:
 
 
 def start_flask_server() -> subprocess.Popen[str]:
+    env = os.environ.copy()
+    env["DISABLE_RELOADER"] = "1"
     process = subprocess.Popen(
         [sys.executable, "run.py"],
         cwd=ROOT,
+        env=env,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
         text=True,
@@ -195,12 +210,25 @@ def start_flask_server() -> subprocess.Popen[str]:
 
 
 def stop_flask_server(process: subprocess.Popen[str]) -> None:
-    process.terminate()
-    try:
-        process.wait(timeout=10)
-    except subprocess.TimeoutExpired:
-        process.kill()
-        process.wait(timeout=5)
+    if os.name == "nt":
+        subprocess.run(
+            ["taskkill", "/PID", str(process.pid), "/T", "/F"],
+            cwd=ROOT,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=False,
+        )
+        try:
+            process.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            pass
+    else:
+        process.terminate()
+        try:
+            process.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            process.kill()
+            process.wait(timeout=5)
 
 
 def parse_attack_output(stdout: str) -> Path:

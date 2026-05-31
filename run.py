@@ -2,6 +2,8 @@
 Flask Application Entry Point
 Run this file to start the login application
 """
+import os
+
 from app import create_app
 
 app = create_app()
@@ -22,5 +24,6 @@ if __name__ == '__main__':
     app.run(
         host='0.0.0.0',
         port=5000,
-        debug=True
+        debug=True,
+        use_reloader=not bool(os.environ.get('DISABLE_RELOADER'))
     )

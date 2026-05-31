@@ -2,13 +2,14 @@ from datetime import datetime, timedelta
 from app import db
 from app.models import User, LoginAttempt, BlockedIP
 import config
+from app.runtime_config import get_config
 import random
 import hashlib
 import requests
 
 def is_ip_blocked(ip):
     """Check if IP is permanently blocked"""
-    if not config.IP_BLOCKING:
+    if not get_config('IP_BLOCKING'):
         return False
 
     blocked = BlockedIP.query.filter_by(ip=ip).first()
@@ -25,7 +26,7 @@ def block_ip(ip, reason):
 
 def is_account_locked(username):
     """Check if account is temporarily locked"""
-    if not config.ACCOUNT_LOCKOUT:
+    if not get_config('ACCOUNT_LOCKOUT'):
         return False
 
     user = User.query.filter_by(username=username).first()
@@ -35,17 +36,18 @@ def is_account_locked(username):
 
 def handle_failed_attempt(ip, username):
     """Handle failed login attempt - update counters and apply locks"""
-    # Account lockout logic
-    if config.ACCOUNT_LOCKOUT:
-        user = User.query.filter_by(username=username).first()
-        if user:
-            user.failed_attempts += 1
-            if user.failed_attempts >= config.LOCKOUT_THRESHOLD:
-                user.locked_until = datetime.utcnow() + timedelta(minutes=config.LOCKOUT_DURATION_MIN)
-            db.session.commit()
+    user = User.query.filter_by(username=username).first()
+    if user:
+        user.failed_attempts += 1
+
+        # Only apply a temporary lock when the defense is enabled.
+        if get_config('ACCOUNT_LOCKOUT') and user.failed_attempts >= config.LOCKOUT_THRESHOLD:
+            user.locked_until = datetime.utcnow() + timedelta(minutes=config.LOCKOUT_DURATION_MIN)
+
+        db.session.commit()
 
     # IP blocking logic
-    if config.IP_BLOCKING:
+    if get_config('IP_BLOCKING'):
         sixty_days_ago = datetime.utcnow() - timedelta(days=60)
         failed_count = LoginAttempt.query.filter(
             LoginAttempt.ip == ip,
@@ -66,7 +68,7 @@ def reset_failed_attempts(username):
 
 def check_anomaly(ip):
     """Rule-based anomaly detection - check for suspicious activity"""
-    if not config.ANOMALY_DETECTION:
+    if not get_config('ANOMALY_DETECTION'):
         return False
 
     sixty_seconds_ago = datetime.utcnow() - timedelta(seconds=60)
@@ -85,11 +87,11 @@ def trigger_alert(ip, attempt_count):
 
 def needs_captcha(username):
     """Check if user needs to solve CAPTCHA"""
-    if not config.CAPTCHA_ENABLED:
+    if not get_config('CAPTCHA_ENABLED'):
         return False
 
     user = User.query.filter_by(username=username).first()
-    if user and user.failed_attempts >= config.CAPTCHA_TRIGGER:
+    if user and user.failed_attempts >= max(0, config.CAPTCHA_TRIGGER - 1):
         return True
     return False
 
@@ -119,7 +121,7 @@ def check_pwned_password(password):
         - is_pwned: True if password found in breach databases
         - breach_count: Number of times this password appeared in breaches (if found)
     """
-    if not config.PWNED_CHECK_ENABLED:
+    if not get_config('PWNED_CHECK_ENABLED'):
         return {'is_pwned': False, 'breach_count': None}
 
     try:
@@ -191,7 +193,7 @@ def log_hibp_check(password, is_pwned, breach_count):
 
 def check_password_strength(password):
     """Check password strength"""
-    if not config.PASSWORD_STRENGTH:
+    if not get_config('PASSWORD_STRENGTH'):
         return True, ""
 
     if len(password) < 8:

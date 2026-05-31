@@ -8,6 +8,7 @@ from app.defenses import (
     reset_failed_attempts, check_anomaly, trigger_alert,
     needs_captcha, generate_captcha, verify_captcha, check_pwned_password
 )
+from app.runtime_config import get_config, set_config, get_all_config, persist_to_file
 import config
 
 @login_manager.user_loader
@@ -25,7 +26,7 @@ def index():
 @current_app.route('/login', methods=['GET', 'POST'])
 @limiter.limit(
     f"{config.RATE_LIMIT_REQUESTS} per minute",
-    exempt_when=lambda: not config.RATE_LIMIT_ENABLED
+    exempt_when=lambda: not get_config('RATE_LIMIT_ENABLED')
 )
 def login():
     if request.method == 'GET':
@@ -66,7 +67,7 @@ def login():
                                  username=username)
 
     # Defense Layer 5: Pwned password check
-    if config.PWNED_CHECK_ENABLED:
+    if get_config('PWNED_CHECK_ENABLED'):
         hibp_result = check_pwned_password(password)
         if hibp_result['is_pwned']:
             log_attempt(ip, username, success=False, blocked=True)
@@ -87,7 +88,7 @@ def login():
         login_user(user)
 
         # Defense Layer 6: MFA (if enabled)
-        if config.MFA_ENABLED:
+        if get_config('MFA_ENABLED'):
             session['pending_mfa_user'] = user.id
             return redirect(url_for('mfa_verify'))
 
@@ -97,6 +98,66 @@ def login():
         log_attempt(ip, username, success=False, blocked=False)
         handle_failed_attempt(ip, username)
         return jsonify({'error': 'Invalid credentials'}), 401
+
+@current_app.route('/register', methods=['GET', 'POST'])
+def register():
+    """User registration endpoint"""
+    if request.method == 'GET':
+        return render_template('register.html')
+
+    # Get form data
+    username = request.form.get('username', '').strip()
+    password = request.form.get('password', '')
+    confirm_password = request.form.get('confirm_password', '')
+
+    # Validation
+    if not username or not password:
+        return jsonify({'error': 'Username and password are required'}), 400
+
+    if len(username) < 3:
+        return jsonify({'error': 'Username must be at least 3 characters'}), 400
+
+    if len(password) < 6:
+        return jsonify({'error': 'Password must be at least 6 characters'}), 400
+
+    if password != confirm_password:
+        return jsonify({'error': 'Passwords do not match'}), 400
+
+    # Defense: Password Strength Check
+    if get_config('PASSWORD_STRENGTH'):
+        from app.defenses import check_password_strength
+        is_strong, strength_error = check_password_strength(password)
+        if not is_strong:
+            return jsonify({'error': strength_error}), 400
+
+    # Defense: Pwned Password Check
+    if get_config('PWNED_CHECK_ENABLED'):
+        hibp_result = check_pwned_password(password)
+        if hibp_result['is_pwned']:
+            breach_count = hibp_result.get('breach_count')
+            if breach_count:
+                error_msg = f'This password was found in {breach_count:,} known breaches. Please choose a different password.'
+            else:
+                error_msg = 'This password has been compromised. Please choose a different password.'
+            return jsonify({'error': error_msg}), 400
+
+    # Check if username already exists
+    existing_user = User.query.filter_by(username=username).first()
+    if existing_user:
+        return jsonify({'error': 'Username already exists'}), 400
+
+    # Create new user with MD5 hash (intentionally weak for testbed)
+    import hashlib
+    password_hash = hashlib.md5(password.encode()).hexdigest()
+    new_user = User(username=username, password_hash=password_hash)
+
+    try:
+        db.session.add(new_user)
+        db.session.commit()
+        return jsonify({'message': 'Account created successfully! Redirecting to login...'}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'Failed to create account. Please try again.'}), 500
 
 @current_app.route('/dashboard')
 @login_required
@@ -159,19 +220,59 @@ def api_metrics():
         'failed': failed
     })
 
-@current_app.route('/api/config')
+@current_app.route('/api/config', methods=['GET', 'POST'])
 def api_config():
-    """Return current defense configuration"""
-    return jsonify({
-        'rate_limit': config.RATE_LIMIT_ENABLED,
-        'account_lockout': config.ACCOUNT_LOCKOUT,
-        'ip_blocking': config.IP_BLOCKING,
-        'captcha': config.CAPTCHA_ENABLED,
-        'anomaly_detection': config.ANOMALY_DETECTION,
-        'mfa': config.MFA_ENABLED,
-        'pwned_check': config.PWNED_CHECK_ENABLED,
-        'password_strength': config.PASSWORD_STRENGTH
-    })
+    """Get or update defense configuration"""
+    if request.method == 'GET':
+        # Return current defense configuration from runtime state
+        runtime_config = get_all_config()
+        return jsonify({
+            'rate_limit': runtime_config['RATE_LIMIT_ENABLED'],
+            'account_lockout': runtime_config['ACCOUNT_LOCKOUT'],
+            'ip_blocking': runtime_config['IP_BLOCKING'],
+            'captcha': runtime_config['CAPTCHA_ENABLED'],
+            'anomaly_detection': runtime_config['ANOMALY_DETECTION'],
+            'mfa': runtime_config['MFA_ENABLED'],
+            'pwned_check': runtime_config['PWNED_CHECK_ENABLED'],
+            'password_strength': runtime_config['PASSWORD_STRENGTH']
+        })
+
+    elif request.method == 'POST':
+        # Update a defense configuration
+        data = request.get_json()
+
+        if not data or 'defense_name' not in data or 'value' not in data:
+            return jsonify({'success': False, 'error': 'Missing defense_name or value'}), 400
+
+        defense_name = data['defense_name']
+        value = data['value']
+
+        # Validate defense name
+        valid_defenses = {
+            'RATE_LIMIT_ENABLED', 'ACCOUNT_LOCKOUT', 'IP_BLOCKING',
+            'CAPTCHA_ENABLED', 'ANOMALY_DETECTION', 'MFA_ENABLED',
+            'PWNED_CHECK_ENABLED', 'PASSWORD_STRENGTH'
+        }
+
+        if defense_name not in valid_defenses:
+            return jsonify({'success': False, 'error': f'Invalid defense name: {defense_name}'}), 400
+
+        # Validate value is boolean
+        if not isinstance(value, bool):
+            return jsonify({'success': False, 'error': 'Value must be a boolean'}), 400
+
+        # Update runtime config
+        if not set_config(defense_name, value):
+            return jsonify({'success': False, 'error': 'Failed to update runtime config'}), 500
+
+        # Persist to config.py file
+        persist_to_file(defense_name, value)
+
+        return jsonify({
+            'success': True,
+            'defense_name': defense_name,
+            'new_value': value
+        })
 
 @current_app.route('/api/stats')
 def api_stats():
