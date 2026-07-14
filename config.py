@@ -12,8 +12,8 @@ IP_BLOCKING = False
 CAPTCHA_ENABLED = False
 ANOMALY_DETECTION = False
 MFA_ENABLED = True
-PWNED_CHECK_ENABLED = False
-PASSWORD_STRENGTH = False
+PWNED_CHECK_ENABLED = True
+PASSWORD_STRENGTH = True
 
 # Thresholds and limits
 RATE_LIMIT_REQUESTS = 8       # requests per minute per IP
