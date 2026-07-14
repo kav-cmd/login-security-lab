@@ -102,8 +102,21 @@ docs (*.md)   # setup, testing, and defense-configuration guides
 
 ## Contributors
 
-Team project - built collaboratively. This copy is maintained by
-**Kavya**, who built the **live defense dashboard** (real-time attack
+Team project - built collaboratively.
+
+## Contributors
+
+Team project - built collaboratively:
+
+| Name | Role |
+|:-----|:-----|
+| Aaditya Raj | Frontend |
+| Saksham | Security testing (attack simulations) |
+| Anjali | Backend |
+| Kavya | Live defense dashboard (real-time attack monitoring, defense toggles, metrics visualization) |
+
+This copy is maintained by **Kavya**.
+ This copy is maintained by**Kavya**, who built the **live defense dashboard** (real-time attack
 monitoring, defense toggles, and metrics visualization).
 
 ---
