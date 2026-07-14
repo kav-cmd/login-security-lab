@@ -85,8 +85,8 @@ python run.py
 streamlit run dashboard/app.py
 ```
 
-See `MASTER_GUIDE.md`, `SETUP_OPTIMIZED.md`, and
-`DEFENSE_CONFIGURATION_GUIDE.md` for full setup, attack-run, and
+See `docs/MASTER_GUIDE.md`, `docs/SETUP_OPTIMIZED.md`, and
+`docs/DEFENSE_CONFIGURATION_GUIDE.md` for full setup, attack-run, and
 defense-tuning instructions.
 
 ## Repository layout
